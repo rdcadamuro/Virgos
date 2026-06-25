@@ -27,7 +27,7 @@ keywords:
   - geNomad
   - CheckV
   - vRhyme
-version: "0.1.0"
-date-released: "2026-06-24"
+version: "1.0.0"
+date-released: "2026-06-25"
 repository-code: "https://github.com/rdcadamuro/Virgos"
 # doi: "10.5281/zenodo.XXXXXXX"                                   # TODO apos arquivar no Zenodo
