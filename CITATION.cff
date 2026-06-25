@@ -1,0 +1,32 @@
+# Citation metadata for this repository.
+# GitHub reads this file and shows a "Cite this repository" button.
+# Zenodo also reads it when minting a DOI for a release.
+# >>> FILL IN the TODO fields before publishing. <<<
+cff-version: 1.2.0
+message: "If you use this pipeline, please cite it using the metadata below."
+title: "phages: a reproducible viral metagenomics pipeline (geNomad → CheckV → vRhyme/VAMB → PhaBox2 → VITAP)"
+abstract: >-
+  A Snakemake workflow that integrates established tools to recover, quality-check,
+  bin, annotate and quantify bacteriophages from complete genomes or metagenomes,
+  with isolated conda environments per tool, vRhyme-style whole-bin CheckV
+  (N-linking), and an automated anti-silent-failure integrity check.
+type: software
+authors:
+  - given-names: "TODO-given-name"      # TODO: seu nome
+    family-names: "TODO-family-name"    # TODO: seu sobrenome
+    email: "escrita.sapiente.edu@gmail.com"
+    # orcid: "https://orcid.org/0000-0000-0000-0000"   # TODO: seu ORCID
+license: MIT
+keywords:
+  - bacteriophage
+  - viral metagenomics
+  - bioinformatics pipeline
+  - Snakemake
+  - vOTU
+  - geNomad
+  - CheckV
+  - vRhyme
+version: "0.1.0"
+date-released: "2026-06-24"
+# repository-code: "https://github.com/<TODO-user>/<TODO-repo>"   # TODO apos criar o repo
+# doi: "10.5281/zenodo.XXXXXXX"                                   # TODO apos arquivar no Zenodo

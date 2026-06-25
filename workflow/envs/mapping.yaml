@@ -1,0 +1,9 @@
+name: mapping
+channels:
+  - conda-forge
+  - bioconda
+dependencies:
+  - bwa-mem2
+  - bowtie2
+  - minimap2
+  - samtools>=1.17

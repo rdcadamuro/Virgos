@@ -1,0 +1,7 @@
+name: derep
+channels:
+  - conda-forge
+  - bioconda
+dependencies:
+  - blast>=2.13
+  - python>=3.9

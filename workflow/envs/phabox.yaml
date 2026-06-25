@@ -1,0 +1,7 @@
+name: phabox
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - phabox>=2.0

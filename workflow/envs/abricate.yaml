@@ -1,0 +1,11 @@
+name: abricate
+channels:
+  - conda-forge
+  - bioconda
+dependencies:
+  # ABRicate: rastreio em massa de ARGs/virulencia/plasmideos por BLAST contra
+  # bancos curados (NCBI AMR, CARD, ResFinder, ARG-ANNOT, MEGARES, VFDB,
+  # PlasmidFinder, EcOH). Os bancos vem embutidos no pacote.
+  - abricate>=1.0
+  - any2fasta
+  - blast>=2.13

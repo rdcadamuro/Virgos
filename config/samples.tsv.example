@@ -1,0 +1,4 @@
+sample	assembly	reads1	reads2	read_type
+SAMPLE_A	/path/to/SAMPLE_A/assembly.fasta	/path/to/SAMPLE_A/R1.fastq.gz	/path/to/SAMPLE_A/R2.fastq.gz	ilu-paired
+SAMPLE_B	/path/to/SAMPLE_B/assembly.fasta	/path/to/SAMPLE_B/reads.fastq.gz		ilu-single
+SAMPLE_C	/path/to/SAMPLE_C/assembly.fasta	/path/to/SAMPLE_C/nanopore.fastq.gz		nano

@@ -1,0 +1,184 @@
+# ======================================================================
+# Pipeline viral — Snakefile principal
+# Modos:
+#   genome      : genomas/assemblies de isolado -> geNomad -> CheckV -> anota.
+#                 Se a amostra TIVER reads, também bina com vRhyme+VAMB
+#                 (short reads fragmentam o genoma como metagenoma).
+#   metagenome  : assembly + reads -> binning (vRhyme/VAMB) -> CheckV
+#                 -> derep -> anota -> ABUNDÂNCIA de vOTUs (mapeia reads)
+# O binning é dirigido pela PRESENÇA DE READS (has_reads), não pelo modo.
+#
+# Saída em pastas numeradas:
+#   01_genomad 02_checkv 03_bins_vrhyme_vamb 04_phabox2 05_vitap
+#   (metagenome) 06_votu_abundance 07_summary_final
+#   (genome)     06_summary_final
+# ======================================================================
+import os
+import re
+import pandas as pd
+
+configfile: "config/config.yaml"
+
+OUT  = config["outdir"]
+MODE = config.get("mode", "metagenome")
+assert MODE in ("genome", "metagenome"), \
+    f"mode inválido: '{MODE}' (use genome|metagenome)"
+
+# ---- pastas numeradas ------------------------------------------------
+D_GENOMAD = f"{OUT}/01_genomad"
+D_CHECKV  = f"{OUT}/02_checkv"
+D_BINS    = f"{OUT}/03_bins_vrhyme_vamb"
+D_PHABOX  = f"{OUT}/04_phabox2"
+D_VITAP   = f"{OUT}/05_vitap"
+if MODE == "metagenome":
+    D_ABUND = f"{OUT}/06_votu_abundance"
+    D_ANNOT = f"{OUT}/07_annotation"
+    D_SUM   = f"{OUT}/08_summary_final"
+else:
+    D_ABUND = None
+    D_ANNOT = f"{OUT}/06_annotation"
+    D_SUM   = f"{OUT}/07_summary_final"
+D_LOGS = f"{OUT}/logs"
+
+# diretório onde os bancos de dados são baixados (bloco 0); override: --config db_dir=...
+SETUP_DBDIR = os.path.expanduser(config.get("db_dir", "~/viral_dbs"))
+
+# ---- padrões de arquivos reusados pelos blocos -----------------------
+VIRAL_FNA  = D_GENOMAD + "/viral_contigs/{sample}.viral.fna"
+CHECKV_SUM = D_CHECKV  + "/{sample}/quality_summary.tsv"
+# CheckV no BIN inteiro (scaffolds unidos por N's) — recomendacao do vRhyme.
+LINKED_BINS     = D_BINS   + "/{sample}/linked_bins.fna"
+CHECKV_BINS_SUM = D_CHECKV + "/{sample}_bins/quality_summary.tsv"
+BAM        = D_BINS    + "/mapping/{sample}.sorted.bam"
+PASSED_FNA = D_BINS    + "/{sample}/passed.fna"
+UNITS_TSV  = D_BINS    + "/{sample}/passed_units.tsv"
+VOTUS      = D_BINS    + "/derep/votus.fna"
+CLUSTERS   = D_BINS    + "/derep/clusters.tsv"
+VOTU_MAP   = D_BINS    + "/derep/contig_to_votu.tsv"
+ALL_UNITS  = D_BINS    + "/derep/all_passed_units.tsv"
+
+# ---- amostras (tolerante: bloco 0/setup não precisa de amostras) -----
+if os.path.exists(config["samples"]):
+    samples_df = pd.read_csv(config["samples"], sep="\t", dtype=str).fillna("")
+else:
+    samples_df = pd.DataFrame(
+        columns=["sample", "assembly", "reads1", "reads2", "read_type"])
+samples_df = samples_df.set_index("sample", drop=False)
+SAMPLES = list(samples_df["sample"])
+
+VALID_RT = {"ilu-paired", "ilu-single", "nano", "na", ""}
+for s in SAMPLES:
+    rt = samples_df.loc[s, "read_type"]
+    assert rt in VALID_RT, f"read_type inválido p/ {s}: '{rt}'"
+    if MODE == "metagenome":
+        assert rt in {"ilu-paired", "ilu-single", "nano"}, \
+            f"metagenome exige read_type de leitura p/ {s} (tem '{rt}')"
+
+def s_assembly(w): return samples_df.loc[w.sample, "assembly"]
+def s_reads1(w):   return samples_df.loc[w.sample, "reads1"]
+def s_reads2(w):   return samples_df.loc[w.sample, "reads2"]
+def s_readtype(w): return samples_df.loc[w.sample, "read_type"]
+
+READ_TYPES = {"ilu-paired", "ilu-single", "nano"}
+
+def has_reads(sample):
+    """True se a amostra tem reads -> deve ser binada com vRhyme+VAMB.
+    Vale nos dois modos: isolados de short read fragmentam e precisam binar."""
+    rt = samples_df.loc[sample, "read_type"]
+    r1 = samples_df.loc[sample, "reads1"]
+    return rt in READ_TYPES and bool(r1)
+
+def has_nanopore():
+    return any(samples_df.loc[s, "read_type"] == "nano" for s in SAMPLES)
+
+def abundance_min_id():
+    """Identidade mínima p/ contar abundância. Se há amostra Nanopore, usa o
+    limiar mais permissivo (reads long-read têm mais erro; 95% de Illumina
+    descartaria reads válidos e subestimaria a abundância)."""
+    ab = config.get("abundance", {})
+    if has_nanopore():
+        return ab.get("min_read_pct_id_nano", 85)
+    return ab.get("min_read_pct_id", 95)
+
+wildcard_constraints:
+    sample = "|".join(re.escape(s) for s in SAMPLES) if SAMPLES else "x"
+
+# ---- blocos (cada etapa = um arquivo) --------------------------------
+include: "rules/setup.smk"       # bloco 0: envs isolados + download dos DBs
+include: "rules/genomad.smk"
+include: "rules/checkv.smk"
+include: "rules/binning.smk"     # mode-aware: metagenome=binning, genome=passthrough
+include: "rules/derep.smk"
+include: "rules/phabox.smk"
+include: "rules/vitap.smk"
+if MODE == "metagenome":
+    include: "rules/abundance.smk"
+include: "rules/annotation.smk"   # resistoma (ABRicate) + mobiloma (geNomad + tools)
+include: "rules/enrichment.smk"   # enriquecimento ARG/MGE viral vs genoma (permutacao)
+include: "rules/ena.smk"          # pacote de submissao ENA (MIUViG) dos uViGs
+include: "rules/final.smk"
+
+# ======================================================================
+# Alvos por etapa (usados pelo phages.py — cada um pode ser chamado solto)
+# ======================================================================
+rule stage_genomad:
+    input: expand(VIRAL_FNA, sample=SAMPLES)
+
+rule stage_checkv:
+    input: expand(CHECKV_SUM, sample=SAMPLES)
+
+rule stage_bins:
+    input: VOTUS
+
+rule stage_phabox:
+    input: f"{D_PHABOX}/final_prediction/phatyp_prediction.tsv"
+
+rule stage_vitap:
+    input: f"{D_VITAP}/vitap_taxonomy.tsv"
+
+if MODE == "metagenome":
+    rule stage_abundance:
+        input: f"{D_ABUND}/votu_abundance_tpm.tsv"
+
+rule stage_annotation:
+    input:
+        f"{D_ANNOT}/resistome_abricate.tsv",
+        f"{D_ANNOT}/mobilome_table.tsv",
+        f"{D_ANNOT}/mobile_element_regions.tsv",
+
+rule stage_enrichment:
+    input:
+        f"{D_ANNOT}/enrichment_results.tsv",
+
+rule stage_report:
+    input:
+        f"{D_ANNOT}/annotation_master.tsv",
+        f"{D_ANNOT}/annotation_stats.log",
+
+rule stage_ena:
+    input:
+        f"{D_ENA}/ena_uvig_metadata.tsv",
+        f"{D_ENA}/ENA_SUBMISSION_GUIDE.md",
+
+def _summary_targets():
+    t = [
+        f"{D_SUM}/viral_bins_table.tsv",
+        f"{D_SUM}/per_sample_summary.tsv",
+        f"{D_ANNOT}/resistome_abricate.tsv",
+        f"{D_ANNOT}/mobilome_table.tsv",
+        f"{D_ANNOT}/enrichment_results.tsv",
+        f"{D_ANNOT}/annotation_master.tsv",
+        f"{D_ANNOT}/annotation_stats.log",
+        f"{D_SUM}/RUN_HEALTHCHECK.txt",
+    ]
+    if config.get("ena", {}).get("enable", True):
+        t.append(f"{D_ENA}/ena_uvig_metadata.tsv")
+    return t
+
+rule stage_summary:
+    input:
+        _summary_targets(),
+
+# alvo padrão
+rule all:
+    input: rules.stage_summary.input

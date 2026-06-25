@@ -1,0 +1,11 @@
+name: abundance
+channels:
+  - conda-forge
+  - bioconda
+dependencies:
+  - coverm>=0.7
+  - samtools
+  - bwa-mem2
+  - minimap2
+  - bowtie2
+  - python>=3.9

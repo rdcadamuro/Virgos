@@ -1,0 +1,14 @@
+# Orchestrator environment (Snakemake + launcher deps).
+# The per-tool scientific environments are built automatically by Snakemake
+# from workflow/envs/*.yaml when you run with --use-conda (block 0).
+#
+#   mamba env create -f environment.yml     # or: conda env create -f environment.yml
+#   conda activate viralpipe
+name: viralpipe
+channels:
+  - conda-forge
+  - bioconda
+dependencies:
+  - python>=3.10
+  - snakemake-minimal>=9
+  - pandas

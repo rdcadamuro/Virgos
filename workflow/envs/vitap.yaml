@@ -1,0 +1,9 @@
+name: vitap
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  # VITAP v1.10 — DrKaiyangZheng/VITAP, Nature Commun. 2025
+  # Requer python<3.12 (bioconda pin já garante isso)
+  - vitap=1.10

@@ -1,0 +1,7 @@
+name: integronfinder
+channels:
+  - conda-forge
+  - bioconda
+dependencies:
+  # IntegronFinder: detecta integrons (complete / In0 / CALIN) em sequências nucleotídicas.
+  - integron_finder>=2.0

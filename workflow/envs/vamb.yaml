@@ -1,0 +1,8 @@
+name: vamb
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - vamb>=4.0
+  - samtools

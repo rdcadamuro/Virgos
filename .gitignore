@@ -1,0 +1,31 @@
+# Snakemake internals
+.snakemake/
+
+# Results (never commit large data)
+results/
+results_*/
+
+# Database directories
+viral_dbs/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+
+# Conda envs
+*.conda_env.yaml.lock
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs and temp
+*.log
+*.tmp
+*.swp
+
+# Sample tables with real paths (keep example, not real)
+config/samples.tsv
+!config/samples.tsv.example

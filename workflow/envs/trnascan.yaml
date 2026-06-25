@@ -1,0 +1,8 @@
+name: trnascan
+channels:
+  - conda-forge
+  - bioconda
+dependencies:
+  # tRNAscan-SE: detecta tRNAs. Em fagos, tRNAs marcam frequentemente sítios de
+  # integração / fronteiras de elementos móveis.
+  - trnascan-se>=2.0

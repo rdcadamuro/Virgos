@@ -1,0 +1,10 @@
+name: macsyfinder
+channels:
+  - conda-forge
+  - bioconda
+dependencies:
+  # MacSyFinder + modelo CONJScan: detecta sistemas conjugativos (T4SS/relaxase),
+  # alternativa instalável e host-agnóstica ao ICEfinder (módulo adotado pelo ICEfinder 2.0).
+  - macsyfinder>=2.1
+  - hmmer>=3.3          # macsyfinder usa hmmsearch
+  - prodigal            # predição de genes nos vOTUs (proteínas p/ o macsyfinder)

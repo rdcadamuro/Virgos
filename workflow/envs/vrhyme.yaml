@@ -1,0 +1,20 @@
+name: vrhyme
+channels:
+  - conda-forge
+  - bioconda
+dependencies:
+  # vRhyme v1.1.0 traz modelos pre-treinados (ExtraTrees pickles) e usa APIs antigas.
+  # 3 pins sao OBRIGATORIOS senao o vRhyme falha SILENCIOSAMENTE no meio da execucao:
+  #
+  #  1) python<3.12      -> permite instalar scikit-learn<1.3 (sem wheel p/ 3.12+)
+  #  2) scikit-learn<1.3 -> os pickles do vRhyme usam o formato de arvore ANTIGO
+  #                         (sem o campo 'missing_go_to_left' add no sklearn 1.3);
+  #                         com sklearn>=1.3 da "node array has incompatible dtype".
+  #  3) setuptools<81    -> vRhyme importa pkg_resources, REMOVIDO no setuptools>=81
+  #                         ("ModuleNotFoundError: No module named 'pkg_resources'").
+  # Ver PIPELINE_DOCS.md secao 10.
+  - "python<3.12"
+  - vrhyme
+  - "scikit-learn<1.3"
+  - "setuptools<81"
+  - samtools

@@ -1,0 +1,132 @@
+# ======================================================================
+# Configuração global do pipeline viral
+# ======================================================================
+
+# Modo do pipeline:
+#   genome     -> pasta de genomas completos (sem reads, sem binning/abundância)
+#   metagenome -> assembly + reads (binning + abundância de vOTUs)
+# (o phages.py sobrescreve isto conforme a escolha do usuário)
+mode: "metagenome"
+
+# Tabela de amostras (TSV). Colunas: sample, assembly, reads1, reads2, read_type
+samples: "config/samples.tsv"
+
+# Diretório de saída (pastas numeradas 01_.. 07_ são criadas dentro)
+outdir: "results"
+
+# Diretório onde o bloco 0 baixa os bancos de dados
+# (o phages.py sobrescreve com --db-dir / pergunta no modo interativo)
+db_dir: "~/viral_dbs"
+
+# --------------------------------------------------------------------
+# Bancos de dados (preencha com os caminhos criados no Passo 0)
+# --------------------------------------------------------------------
+databases:
+  genomad: "/home/rafa/viral_dbs/genomad_db"
+  checkv:  "/home/rafa/viral_dbs/checkv-db-v1.5"
+  phabox:  "/home/rafa/viral_dbs/phabox_db_v2"
+  vitap:   "/home/rafa/viral_dbs/ViTAP_db/DB_hybrid_MSL37_RefSeq209_IMGVR"
+
+# --------------------------------------------------------------------
+# Recursos (threads por etapa)
+# --------------------------------------------------------------------
+threads:
+  genomad: 8
+  mapping: 8
+  binning: 8
+  checkv:  8
+  phabox:  8
+  vitap:   8
+
+# --------------------------------------------------------------------
+# Parâmetros das etapas
+# --------------------------------------------------------------------
+genomad:
+  min_virus_score: 0.7          # filtro extra sobre virus_summary.tsv
+  extra: "--cleanup --splits 4"
+
+mapping:
+  illumina_mapper: "bwa-mem2"   # alternativa: "bowtie2"
+  nanopore_preset: "map-ont"    # minimap2
+
+binning:
+  min_contig_len: 2000          # contigs menores descartados antes do binning
+  run_vrhyme: true
+  run_vamb: true
+  vamb_minfasta: 2000
+  link_spacer_n: 1000           # N's entre scaffolds ao unir bins p/ CheckV (vRhyme)
+
+checkv:
+  min_viral_genes: 1            # ELIMINA bins com viral_genes < 1 (ponto 1.b)
+
+derep:
+  min_ani: 95                   # vOTU: ANI >= 95%
+  min_af: 85                    # vOTU: alignment fraction >= 85%
+
+phabox:
+  task: "end_to_end"            # roda phamer+phagcn+phatyp+phavip
+
+# Abundância de vOTUs (só metagenoma) — mapeamento reads -> vOTUs via CoverM
+abundance:
+  min_read_pct_id: 95           # identidade mínima do read p/ contar (Illumina)
+  min_read_pct_id_nano: 85      # idem p/ Nanopore (reads têm mais erro; 95 descartaria reads válidos)
+  min_read_aln_pct: 75          # fração mínima do read alinhada
+
+# --------------------------------------------------------------------
+# Anotação funcional dos vOTUs: RESISTOMA (ABRicate) + MOBILOMA (geNomad)
+# Roda só nas sequências virais QC-aprovadas (vOTUs).
+# --------------------------------------------------------------------
+annotation:
+  run: true
+  # Bancos do ABRicate a rodar. "all" = TODOS os embutidos (resolvido em runtime
+  # via 'abricate --list'; hoje: ncbi, card, resfinder, argannot, megares, vfdb,
+  # victors, ecoli_vf, upec_expec_vf, plasmidfinder, ecoh, bacmet2). Para escolher
+  # um subconjunto, troque por uma lista YAML, ex.: ["ncbi","card","resfinder"].
+  abricate_dbs: "all"
+  abricate_minid: 80            # %identidade mínima do hit
+  abricate_mincov: 80           # %cobertura mínima do hit
+  dedup_overlap: 0.5            # sobreposição p/ tratar hits de DBs diferentes como o MESMO locus
+  # Palavras-chave p/ marcar elementos móveis na anotação do geNomad (regex, case-insensitive)
+  mge_keywords: "integrase|transposase|recombinase|relaxase|resolvase|mobiliz|conjugat|insertion sequence"
+  # Ferramentas de mobiloma a rodar (além da consolidação do geNomad).
+  run_integron_finder: true
+  run_mobileelementfinder: true
+  run_trnascan: true
+  run_conjscan: true            # CONJScan/MacSyFinder: sistemas conjugativos (alternativa ao ICEfinder)
+  run_integron_genome: true     # IntegronFinder no GENOMA INTEIRO -> categoria is_integron no enriquecimento
+  run_is_genome: true           # MobileElementFinder no GENOMA INTEIRO -> categoria is_IS no enriquecimento
+  run_conjscan_genome: true     # CONJScan no GENOMA INTEIRO -> categoria is_conjugative_system no enriquecimento
+  conjscan_models: "CONJScan/Chromosome CONJScan/Plasmids"   # subconjuntos do CONJScan 2.x (macsydata install --user CONJScan)
+  run_icefinder: false          # ICEfinder NÃO é conda; requer instalação manual (ver PIPELINE_DOCS)
+  icefinder_path: ""            # caminho do ICEfinder.pl se instalado manualmente
+  # Enriquecimento (permutação) de ARG/MGE na fração viral vs genoma completo
+  enrichment_permutations: 10000
+  enrichment_min_events: 5      # < isso -> status UNDERPOWERED (ex.: ARG raro em fago)
+
+# --------------------------------------------------------------------
+# Submissão ao ENA (European Nucleotide Archive) — pacote MIUViG dos uViGs.
+# Auto-alimenta tabelas MIUViG + manifestos Webin-CLI (MAG) + FASTAs + guia.
+# Campos vazios viram TODO_PREENCHER no pacote (preenchidos pelo submissor).
+# --------------------------------------------------------------------
+ena:
+  enable: true
+  study_accession: ""           # PRJEBxxxxx (após registrar o estudo no Webin)
+  center_name: ""               # nome do centro submissor (Webin)
+  sample_checklist: "ERC000011" # checklist ENA p/ os samples; confirme o de UViG/MIxS no navegador de checklists
+  source_uvig: "viral fraction metagenome (virome)"  # proviruses sobrescrevem p/ "provirus (UViG)"
+  uvig_tax_id: ""               # taxid dos uViGs sem classificação (ex.: 12429 = unclassified viruses)
+  uvig_scientific_name: "uncultured virus"
+  assembly_software: ""         # assembler A MONTANTE (ex.: "metaSPAdes; 3.15.5; default") — só o usuário sabe
+  sequencing_platform: ""       # override; vazio -> derivado do read_type (ILLUMINA/OXFORD_NANOPORE)
+  molecule_type: "genomic DNA"  # genomic DNA | genomic RNA | viral cRNA
+  pred_genome_type: "uncharacterized"   # dsDNA | ssDNA | RNA | uncharacterized...
+  virus_enrich_appr: ""         # ex.: "0.22um filtration; DNAse" (só o usuário sabe)
+  nucl_acid_ext: ""             # protocolo de extração (só o usuário sabe)
+  collection_date: ""           # data de coleta (só o usuário sabe)
+  geographic_location: ""       # local de coleta (só o usuário sabe)
+  # versões dos softwares (citadas na proveniência MIUViG; ajuste se atualizar)
+  genomad_version: "1.12.0"
+  checkv_version: "1.1.1"
+  vitap_version: "latest"
+
+scripts_dir: "workflow/scripts"
