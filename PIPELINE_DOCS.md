@@ -965,9 +965,9 @@ Ao publicar resultados gerados com este pipeline, citar:
 
 4. **VAMB:** Nissen JN, Johansen J, Allesøe RL, et al. *Improved metagenome binning and assembly using deep variational autoencoders.* Nature Biotechnology, 2021. https://doi.org/10.1038/s41587-020-00777-4
 
-5. **PhaBox2:** Shang J, Tang X, Sun Y. *PhaBOX v2: integrating phage sequence identification and functional analyses.* Bioinformatics Advances, 2024. https://doi.org/10.1093/bioadv/vbae130
+5. **PhaBox2:** Shang J, Peng C, Guan J, Cai D, Wang D, Sun Y. *PhaBOX2: an enhanced web server for discovering and analyzing viral contigs in metagenomic data.* Nucleic Acids Research, 2026 (advance access). https://doi.org/10.1093/nar/gkag382
 
-6. **VITAP:** Zheng K, et al. *VITAP: Viral Taxonomic Assignment Pipeline for novel viruses.* Nature Communications, 2025.
+6. **VITAP:** Zheng K, et al. *VITAP: a high precision tool for DNA and RNA viral classification based on meta-omic data.* Nature Communications 16, 2226 (2025). https://doi.org/10.1038/s41467-025-57500-7
 
 7. **Diamond:** Buchfink B, Reuter K, Drost HG. *Sensitive protein alignments at tree-of-life scale using DIAMOND.* Nature Methods, 2021. https://doi.org/10.1038/s41592-021-01101-x
 

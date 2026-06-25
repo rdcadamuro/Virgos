@@ -385,8 +385,8 @@ If you use this pipeline in your research, **please also cite the underlying too
 - **CheckV:** Nayfach et al., *Nature Biotechnology* 2021. https://doi.org/10.1038/s41587-020-00774-7
 - **vRhyme:** Kieft et al., *Nucleic Acids Research* 2022. https://doi.org/10.1093/nar/gkac341
 - **VAMB:** Nissen et al., *Nature Biotechnology* 2021. https://doi.org/10.1038/s41587-020-00777-4
-- **PhaBox2:** Shang et al., *Bioinformatics Advances* 2024. https://doi.org/10.1093/bioadv/vbae130
-- **VITAP:** Zheng et al., *Nature Communications* 2025.
+- **PhaBox2:** Shang et al., "PhaBOX2: an enhanced web server for discovering and analyzing viral contigs in metagenomic data", *Nucleic Acids Research* 2026 (advance access). https://doi.org/10.1093/nar/gkag382
+- **VITAP:** Zheng et al., "VITAP: a high precision tool for DNA and RNA viral classification based on meta-omic data", *Nature Communications* 16, 2226 (2025). https://doi.org/10.1038/s41467-025-57500-7
 - **Diamond:** Buchfink et al., *Nature Methods* 2021. https://doi.org/10.1038/s41592-021-01101-x
 - **Snakemake:** Mölder et al., *F1000Research* 2021. https://doi.org/10.12688/f1000research.29032.2
 
