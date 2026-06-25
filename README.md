@@ -1,10 +1,9 @@
-# phages — Viral Metagenomics Pipeline
+# Virgos — Phage Identification & Analysis Pipeline
 
-<!-- TODO: after creating the repo and a Zenodo release, replace the placeholders below -->
 ![Snakemake](https://img.shields.io/badge/snakemake-%E2%89%A59.0-brightgreen)
 ![License: MIT](https://img.shields.io/badge/license-MIT-blue)
 ![Platform](https://img.shields.io/badge/platform-Linux%20%7C%20WSL2-lightgrey)
-<!-- [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.XXXXXXX.svg)](https://doi.org/10.5281/zenodo.XXXXXXX) -->
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.20859599.svg)](https://doi.org/10.5281/zenodo.20859599)
 
 > **Snakemake workflow** for recovery, QC, binning, annotation and abundance profiling of bacteriophages from complete genomes or metagenomes.
 > Validated end-to-end on WSL2 Ubuntu 22.04 · 2026-06-24.
@@ -377,7 +376,10 @@ for a broader catalogue.
 ## Citation
 
 **To cite this pipeline**, use the metadata in [`CITATION.cff`](CITATION.cff) (GitHub
-shows a *"Cite this repository"* button) — or the Zenodo DOI once a release is archived.
+shows a *"Cite this repository"* button) or the Zenodo DOI:
+
+- **All versions (concept DOI, recommended):** [10.5281/zenodo.20859599](https://doi.org/10.5281/zenodo.20859599)
+- **This release (v1.0.0):** [10.5281/zenodo.20859600](https://doi.org/10.5281/zenodo.20859600)
 
 If you use this pipeline in your research, **please also cite the underlying tools**:
 
