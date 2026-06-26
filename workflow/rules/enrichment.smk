@@ -137,6 +137,7 @@ rule build_gene_table:
         integron = INTEGRON_HITS,      # is_integron (IntegronFinder no genoma inteiro)
         is_hits  = IS_HITS,            # is_IS (MobileElementFinder no genoma inteiro)
         conj     = CONJ_HITS,          # is_conjugative_system (CONJScan no genoma inteiro)
+        phatyp   = D_PHABOX + "/final_prediction/phatyp_prediction.tsv",  # lifestyle (temperate/virulent)
     output:
         tsv = GENE_TABLE,
     params:
@@ -144,6 +145,9 @@ rule build_gene_table:
         gdir   = D_GENOMAD,
         mge    = lambda wildcards: _ANN_E.get("mge_keywords",
                  "integrase|transposase|recombinase|relaxase|resolvase|mobiliz|conjugat|insertion sequence"),
+        vset   = _ANN_E.get("enrichment_viral_set", "temperate_phage"),
+        phage  = lambda wildcards: _ANN_E.get("phage_taxa_classes",
+                 "Caudoviricetes|Malgrandaviricetes|Faserviricetes|Leviviricetes"),
     conda: "../envs/pyutils.yaml"
     log: D_LOGS + "/06_gene_table/{sample}.log"
     shell:
@@ -165,6 +169,8 @@ rule build_gene_table:
             --integron-hits {input.integron} \
             --is-hits {input.is_hits} \
             --conjscan-hits {input.conj} \
+            --phatyp {input.phatyp} \
+            --viral-set {params.vset} --phage-classes '{params.phage}' \
             --out {output.tsv} >> "$LOG" 2>&1
         echo "[gene_table] OK -- rodou ate o fim (exit 0)." >> "$LOG"
         """

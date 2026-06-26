@@ -811,6 +811,24 @@ não-viral** (genoma bacteriano/MAG com prófagos); para fago puro o motor repor
   > §13.2) **e** no genoma inteiro (background do enriquecimento). Sem o segundo
   > uso, `is_IS`/`is_conjugative_system` ficariam sempre 0 (sem fração não-viral
   > para comparar) → permanentemente `UNDERPOWERED`. Por isso são duas execuções.
+
+  **Qual fração viral entra (`is_viral`).** ARG/MGE são esperados em fagos
+  **TEMPERADOS** (integram e trocam DNA com o hospedeiro), não em líticos nem em
+  vírus eucarióticos. Por isso o default `enrichment_viral_set: temperate_phage`
+  restringe `is_viral` a **fagos temperados**, com dois portões:
+  - **Portão de fago (taxonomia geNomad):** mantém só vírus procarióticos
+    (`phage_taxa_classes`, p.ex. *Caudoviricetes*) — **exclui vírus eucarióticos/RNA**
+    (Orthornavirae, *Pararnavirae* = retrovírus tipo HIV, Megaviricetes…). geNomad
+    detecta esses vírus eucarióticos, e o **PhaTYP assume que a entrada é fago** —
+    então sem este portão ele rotularia um HIV como "temperate" sem sentido.
+  - **Portão temperado:** provírus (integrados ⇒ temperados) **OU** contig de fago
+    com **PhaTYP = temperate** (líticos são descartados).
+
+  Modos: `temperate_phage` (default) · `provirus` (só integrados, mais estrito) ·
+  `all_viral` (qualquer região viral; menos específico). O log do `build_gene_table`
+  registra quantas regiões entraram e quantas foram filtradas (não-fago / líticas).
+  **Trade-off:** restringir reduz o nº de genes virais → categorias raras podem
+  virar `UNDERPOWERED`; em troca, o teste fica biologicamente específico e defensável.
 - [`permutation_enrichment.py`](workflow/scripts/permutation_enrichment.py):
   **permutação estratificada por amostra** (preserva nº de genes virais → controla
   o confundidor de tamanho) + **hipergeométrica** como cruzamento. Auto-detecta
@@ -846,6 +864,8 @@ annotation:
   run_conjscan_genome: true     # CONJScan no genoma inteiro -> is_conjugative_system
   enrichment_permutations: 10000
   enrichment_min_events: 5      # < isso -> UNDERPOWERED
+  enrichment_viral_set: "temperate_phage"   # temperate_phage | provirus | all_viral
+  phage_taxa_classes: "Caudoviricetes|Malgrandaviricetes|Faserviricetes|Leviviricetes"
 ```
 
 ---

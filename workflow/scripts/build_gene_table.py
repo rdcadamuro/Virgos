@@ -36,29 +36,69 @@ def gene_contig(gene_id):
     return gene_id.rsplit("_", 1)[0] if "_" in gene_id else gene_id
 
 
+# Classes virais PROCARIOTICAS (fagos) na taxonomia do geNomad. O default cobre
+# os principais; vir eucariotico (Orthornavirae/RNA, Pararnavirae=retro p.ex. HIV,
+# Megaviricetes=virus gigantes, Herpes, etc.) NAO casa e fica de fora do teste.
+DEFAULT_PHAGE_CLASSES = "Caudoviricetes|Malgrandaviricetes|Faserviricetes|Leviviricetes"
+
+_BIN_RE = re.compile(r"^(?P<sample>.+?)__(?:vamb|vrhyme)__bin\d+__(?P<contig>.+)$")
+
+
 def parse_viral_regions(virus_summary, provirus):
-    """Retorna (set de contigs totalmente virais, lista de (src, start, end) provírus)."""
-    full, prov = set(), []
+    """Retorna:
+      full_viral: {contig: taxonomy}      -- contigs totalmente virais (livres)
+      prov: [(src, start, end, taxonomy)] -- proviruses (integrados = temperados)
+    A taxonomia vem da coluna 'taxonomy' do virus_summary (inclui as linhas de provirus)."""
+    full, prov = {}, []
     for r in read_tsv(virus_summary):
         sn = r.get("seq_name", "")
+        tax = r.get("taxonomy", "") or ""
         if "|provirus_" in sn:
-            # ex.: NODE_33...|provirus_131_14917
             m = re.search(r"\|provirus_(\d+)_(\d+)$", sn)
             src = sn.split("|provirus_")[0]
             if m:
-                prov.append((src, int(m.group(1)), int(m.group(2))))
+                prov.append((src, int(m.group(1)), int(m.group(2)), tax))
         elif sn:
-            full.add(sn)
-    # provirus.tsv (source_seq, start, end) — reforça
+            full[sn] = tax
+    # provirus.tsv reforça proviruses ausentes do virus_summary (taxonomia desconhecida)
+    seen = {(s, a, b) for s, a, b, _ in prov}
     for r in read_tsv(provirus):
         src = r.get("source_seq") or r.get("seq_name", "")
         try:
             s, e = int(r.get("start", 0)), int(r.get("end", 0))
-            if src and e > 0:
-                prov.append((src.split("|provirus_")[0], s, e))
         except ValueError:
-            pass
+            continue
+        src0 = src.split("|provirus_")[0]
+        if src0 and e > 0 and (src0, s, e) not in seen:
+            prov.append((src0, s, e, ""))
     return full, prov
+
+
+def parse_phatyp(path, sample):
+    """PhaTYP prediction -> {contig: TYPE} (temperate/virulent) SÓ desta amostra.
+    A Accession do PhaTYP é o nome do vOTU (<sample>__<binner>__binN__<contig>);
+    tiramos o prefixo p/ casar com o seq_name do geNomad (provirus -> contig de origem)."""
+    out = {}
+    for r in read_tsv(path):
+        acc = r.get("Accession") or r.get("accession") or ""
+        typ = (r.get("TYPE") or r.get("Type") or r.get("Pred") or "").strip().lower()
+        if not acc or not typ:
+            continue
+        m = _BIN_RE.match(acc)
+        if m:
+            if m.group("sample") != sample:
+                continue
+            contig = m.group("contig").split("|provirus_")[0]
+        else:
+            contig = acc.split("|provirus_")[0]
+        out[contig] = typ
+    return out
+
+
+def is_phage_tax(tax, phage_re):
+    """True se a taxonomia do geNomad indica vírus PROCARIÓTICO (fago).
+    tax vazio (provirus reforçado pelo provirus.tsv) -> assume fago (prófago)."""
+    return tax == "" or bool(phage_re.search(tax))
 
 
 def load_coord_hits(path, seq_key_candidates=("sequence", "seq", "contig")):
@@ -113,11 +153,43 @@ def main():
     ap.add_argument("--integron-hits", default="", help="(opcional) IntegronFinder no genoma (coords) -> is_integron")
     ap.add_argument("--conjscan-hits", default="", help="(opcional) CONJScan no genoma (coords) -> is_conjugative_system")
     ap.add_argument("--is-hits", default="", help="(opcional) MobileElementFinder no genoma (coords) -> is_IS")
+    ap.add_argument("--phatyp", default="", help="(opcional) PhaTYP prediction (lifestyle) -> filtro temperate")
+    ap.add_argument("--phage-classes", default=DEFAULT_PHAGE_CLASSES,
+                    help="regex das classes virais procarióticas (fagos) na taxonomia geNomad")
+    ap.add_argument("--viral-set", default="temperate_phage",
+                    choices=["temperate_phage", "provirus", "all_viral"],
+                    help="quais regiões virais entram como is_viral no enriquecimento")
     ap.add_argument("--out", required=True)
     args = ap.parse_args()
 
     mge_re = re.compile(args.mge_keywords, re.IGNORECASE)
+    phage_re = re.compile(args.phage_classes, re.IGNORECASE)
     full_viral, prov = parse_viral_regions(args.virus_summary, args.provirus)
+    phatyp = parse_phatyp(args.phatyp, args.sample) if args.phatyp else {}
+    mode = args.viral_set
+
+    # ----- seleciona o CONJUNTO VIRAL conforme o modo -----
+    # provírus = integrados = TEMPERADOS (sempre); contigs livres precisam de
+    # PhaTYP=temperate. Em ambos exige passar pelo PORTÃO DE FAGO (taxonomia).
+    prov_sel, free_sel = [], set()
+    n_prov_nonphage = n_free_nonphage = n_free_lytic = 0
+    for (src, s, e, tax) in prov:
+        if mode == "all_viral" or is_phage_tax(tax, phage_re):
+            prov_sel.append((src, s, e))
+        else:
+            n_prov_nonphage += 1
+    for contig, tax in full_viral.items():
+        if mode == "all_viral":
+            free_sel.add(contig)
+        elif mode == "provirus":
+            pass  # contigs livres não entram
+        else:  # temperate_phage
+            if not is_phage_tax(tax, phage_re):
+                n_free_nonphage += 1
+            elif phatyp.get(contig, "") != "temperate":
+                n_free_lytic += 1
+            else:
+                free_sel.add(contig)
     abr = load_coord_hits(args.abricate) if args.abricate else {}
     mge_reg = load_coord_hits(args.mge_regions) if args.mge_regions else {}
     int_hits = load_coord_hits(args.integron_hits) if args.integron_hits else {}
@@ -140,8 +212,8 @@ def main():
                 gs, ge = 0, 0
             desc = g.get("annotation_description", "") or ""
 
-            viral = contig in full_viral or any(
-                src == contig and not (ge < s or gs > e) for src, s, e in prov)
+            viral = contig in free_sel or any(
+                src == contig and not (ge < s or gs > e) for (src, s, e) in prov_sel)
 
             # --- categorias do geNomad (genoma inteiro) ---
             arg = g.get("annotation_amr", "") not in NA
@@ -177,8 +249,13 @@ def main():
                       + "\t".join(str(int(row[c])) for c in _CATEGORIES) + "\n")
 
     cat_str = " ".join(f"{c.replace('is_', '')}={totals[c]}" for c in _CATEGORIES)
-    print(f"[build_gene_table] {args.sample}: {len(genes)} genes "
-          f"(viral={n_viral}; {cat_str}) -> {args.out}")
+    print(f"[build_gene_table] {args.sample}: {len(genes)} genes | viral_set={mode} "
+          f"(regioes: {len(prov_sel)} provirus + {len(free_sel)} fago-livre-temperado) "
+          f"-> {n_viral} genes virais")
+    print(f"[build_gene_table] FILTRADOS do conjunto viral: "
+          f"{n_prov_nonphage} provirus nao-fago, {n_free_nonphage} contigs nao-fago "
+          f"(ex.: virus eucariotico/RNA), {n_free_lytic} fagos liticos (PhaTYP!=temperate)")
+    print(f"[build_gene_table] {cat_str} -> {args.out}")
 
 
 if __name__ == "__main__":

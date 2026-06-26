@@ -102,6 +102,17 @@ annotation:
   # Enriquecimento (permutação) de ARG/MGE na fração viral vs genoma completo
   enrichment_permutations: 10000
   enrichment_min_events: 5      # < isso -> status UNDERPOWERED (ex.: ARG raro em fago)
+  # Qual fração viral entra no teste. Cientificamente, ARG/MGE são esperados em
+  # fagos TEMPERADOS (integram/trocam DNA com o hospedeiro), não em líticos nem em
+  # vírus eucarióticos. Por isso o default restringe a fagos temperados:
+  #   temperate_phage = provírus (integrados) + contigs de fago temperados (PhaTYP)
+  #   provirus        = só provírus integrados (mais estrito)
+  #   all_viral       = qualquer região viral (comportamento antigo; menos específico)
+  enrichment_viral_set: "temperate_phage"
+  # Classes virais PROCARIÓTICAS (fagos) na taxonomia do geNomad — PORTÃO que exclui
+  # vírus eucarióticos/RNA (Orthornavirae, Pararnavirae=retro p.ex. HIV, Megaviricetes...)
+  # antes de confiar no rótulo temperate/lytic do PhaTYP (que assume entrada = fago).
+  phage_taxa_classes: "Caudoviricetes|Malgrandaviricetes|Faserviricetes|Leviviricetes"
 
 # --------------------------------------------------------------------
 # Submissão ao ENA (European Nucleotide Archive) — pacote MIUViG dos uViGs.
