@@ -45,6 +45,36 @@ rule final_table:
         """
 
 
+# ----------------------------------------------------------------------
+# CANDIDATO A ESPÉCIE NOVA — flag honesto/conservador por vOTU.
+# Só marca 'candidate_novel_species' se High-quality+ (a def. de espécie
+# 95%ANI/85%AF só é confiável fora de fragmento) + fago + sem táxon de
+# gênero/espécie no VITAP. Fragmento -> 'indeterminate_fragment'.
+# ----------------------------------------------------------------------
+rule votu_novelty:
+    input:
+        per_bin     = D_SUM + "/viral_bins_table.tsv",
+        checkv_bins = expand(CHECKV_BINS_SUM, sample=SAMPLES),
+    output:
+        tsv = D_SUM + "/votu_novelty.tsv",
+    params:
+        script = f"{config['scripts_dir']}/flag_novelty.py",
+        minc   = config.get("annotation", {}).get("novelty_min_completeness", 90),
+    conda: "../envs/pyutils.yaml"
+    log: D_LOGS + "/08_novelty.log"
+    shell:
+        r"""
+        set -euo pipefail
+        LOG="{log}"; mkdir -p "$(dirname "$LOG")" "$(dirname {output.tsv})"
+        echo "=== candidato a especie nova | $(date) ===" > "$LOG"
+        python {params.script} --per-bin {input.per_bin} \
+            --checkv-bins {input.checkv_bins} --min-completeness {params.minc} \
+            --out {output.tsv} >> "$LOG" 2>&1
+        n=$(grep -c 'candidate_novel_species' {output.tsv} 2>/dev/null || echo 0)
+        echo "[novelty] OK -- rodou ate o fim (exit 0). candidatos a especie nova: $n" >> "$LOG"
+        """
+
+
 # ======================================================================
 # VERIFICACAO INTELIGENTE — roda DEPOIS de tudo. Audita todas as etapas,
 # cruza consistencia entre elas e varre os logs por erros silenciosos.

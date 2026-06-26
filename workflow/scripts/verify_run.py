@@ -407,6 +407,27 @@ def main():
         else:
             rep.item(EMPTY_OK, "09 ENA", "pacote ENA vazio (sem uViGs)")
 
+    # 08 candidato a especie nova — conta status (flag conservador)
+    nov = f"{D_SUM}/votu_novelty.tsv"
+    if os.path.exists(nov):
+        try:
+            from collections import Counter
+            st = Counter()
+            with open(nov, errors="ignore") as fh:
+                header = fh.readline().rstrip("\n").split("\t")
+                i = header.index("novelty_status") if "novelty_status" in header else -1
+                for ln in fh:
+                    f = ln.rstrip("\n").split("\t")
+                    if 0 <= i < len(f):
+                        st[f[i]] += 1
+            cand = st.get("candidate_novel_species", 0)
+            frag = st.get("indeterminate_fragment", 0)
+            msg = (f"{cand} candidato(s) a especie nova; {frag} indeterminado(s) "
+                   f"(fragmento); classificados={st.get('classified', 0)}")
+            rep.item(OK, "08 novidade", msg)
+        except (ValueError, OSError) as e:
+            rep.item(WARN, "08 novidade", f"votu_novelty ilegivel: {e}")
+
     # ----------------------------- veredito -----------------------------
     c = rep.counts
     rep.raw("")

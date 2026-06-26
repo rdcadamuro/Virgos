@@ -847,6 +847,16 @@ Saída: `enrichment_results.tsv` + `enrichment_checkpoint.json`.
   (ratio, p permutação + hipergeométrica, status, **interpretação automática**
   ENRIQUECIDO/DEPLETADO/sem/UNDERPOWERED) + checkpoint da dedup + totais.
 
+**Candidato a espécie nova** ([`flag_novelty.py`](workflow/scripts/flag_novelty.py) →
+`votu_novelty.tsv`, no resumo final): flag **conservador e honesto** por vOTU.
+A definição operacional de espécie viral (95% ANI / ≥85% AF, MIUViG) só é confiável
+fora de fragmento — então o status só vira **`candidate_novel_species`** se o vOTU
+é **High-quality+** (CheckV `miuvig_quality`), é **fago** (portão de taxonomia) e
+**não tem táxon de gênero/espécie** no VITAP. Fragmento (low/medium) →
+**`indeterminate_fragment`** (a ausência de match pode ser só falta da parte
+conservada — não se alega novidade). Reporta também `prevalence` (n_members do
+cluster). O healthcheck conta os status (item `08 novidade`).
+
 ### 13.6 Configuração ([config.yaml](config/config.yaml) → `annotation`)
 
 ```yaml

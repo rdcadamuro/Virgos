@@ -169,6 +169,7 @@ def _summary_targets():
         f"{D_ANNOT}/enrichment_results.tsv",
         f"{D_ANNOT}/annotation_master.tsv",
         f"{D_ANNOT}/annotation_stats.log",
+        f"{D_SUM}/votu_novelty.tsv",
         f"{D_SUM}/RUN_HEALTHCHECK.txt",
     ]
     if config.get("ena", {}).get("enable", True):

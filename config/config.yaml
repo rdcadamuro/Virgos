@@ -120,6 +120,10 @@ annotation:
   # true = mantém vírus sub-classificado como fago (NÃO perde fago novo/divergente);
   # false = só conta o que bate na whitelist (mais estrito).
   phage_filter_lenient: true
+  # Flag de "candidato a espécie nova" (tabela votu_novelty.tsv): completeness mínima
+  # p/ a definição de espécie (95% ANI/85% AF) ser confiável. Abaixo disso ->
+  # 'indeterminate_fragment' (fragmento variável demais p/ alegar novidade).
+  novelty_min_completeness: 90
 
 # --------------------------------------------------------------------
 # Submissão ao ENA (European Nucleotide Archive) — pacote MIUViG dos uViGs.
