@@ -145,9 +145,11 @@ rule build_gene_table:
         gdir   = D_GENOMAD,
         mge    = lambda wildcards: _ANN_E.get("mge_keywords",
                  "integrase|transposase|recombinase|relaxase|resolvase|mobiliz|conjugat|insertion sequence"),
-        vset   = _ANN_E.get("enrichment_viral_set", "temperate_phage"),
-        phage  = lambda wildcards: _ANN_E.get("phage_taxa_classes",
-                 "Caudoviricetes|Malgrandaviricetes|Faserviricetes|Leviviricetes"),
+        vset    = _ANN_E.get("enrichment_viral_set", "temperate_phage"),
+        lenient = str(_ANN_E.get("phage_filter_lenient", True)).lower(),
+        phage   = lambda wildcards: _ANN_E.get("phage_taxa_classes", "Caudoviricetes"),
+        euk     = lambda wildcards: _ANN_E.get("eukaryotic_taxa",
+                  "Herviviricetes|Megaviricetes|Revtraviricetes|Artverviricota|Negarnaviricota"),
     conda: "../envs/pyutils.yaml"
     log: D_LOGS + "/06_gene_table/{sample}.log"
     shell:
@@ -170,7 +172,8 @@ rule build_gene_table:
             --is-hits {input.is_hits} \
             --conjscan-hits {input.conj} \
             --phatyp {input.phatyp} \
-            --viral-set {params.vset} --phage-classes '{params.phage}' \
+            --viral-set {params.vset} --phage-lenient {params.lenient} \
+            --phage-classes '{params.phage}' --eukaryotic-classes '{params.euk}' \
             --out {output.tsv} >> "$LOG" 2>&1
         echo "[gene_table] OK -- rodou ate o fim (exit 0)." >> "$LOG"
         """

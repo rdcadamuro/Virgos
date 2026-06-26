@@ -109,10 +109,17 @@ annotation:
   #   provirus        = só provírus integrados (mais estrito)
   #   all_viral       = qualquer região viral (comportamento antigo; menos específico)
   enrichment_viral_set: "temperate_phage"
-  # Classes virais PROCARIÓTICAS (fagos) na taxonomia do geNomad — PORTÃO que exclui
-  # vírus eucarióticos/RNA (Orthornavirae, Pararnavirae=retro p.ex. HIV, Megaviricetes...)
-  # antes de confiar no rótulo temperate/lytic do PhaTYP (que assume entrada = fago).
-  phage_taxa_classes: "Caudoviricetes|Malgrandaviricetes|Faserviricetes|Leviviricetes"
+  # PORTÃO DE FAGO (taxonomia geNomad). Realms são mistos -> filtramos por CLASSE/FAMÍLIA.
+  # WHITELIST = TODAS as classes/famílias de vírus PROCARIÓTICOS (bactéria + arqueia, DNA
+  # + RNA): caudados (Caudoviricetes), ssDNA (Microviridae/Inoviridae), ssRNA (Leviviricetes),
+  # dsRNA (Cystoviridae/Vidaverviricetes) e vírus de ARQUEIA (Tokiviricetes/Adnaviria + famílias).
+  phage_taxa_classes: "Caudoviricetes|Caudovirales|Leviviricetes|Faserviricetes|Vidaverviricetes|Malgrandaviricetes|Tokiviricetes|Adnaviria|Microviridae|Inoviridae|Plectroviridae|Tectiviridae|Corticoviridae|Autolykiviridae|Cystoviridae|Fiersviridae|Steitzviridae|Solspiviridae|Duinviridae|Plasmaviridae|Finnlakeviridae|Fuselloviridae|Halspiviridae|Thaspiviridae|Bicaudaviridae|Ampullaviridae|Clavaviridae|Globuloviridae|Guttaviridae|Spiraviridae|Ovaliviridae|Portogloboviridae|Turriviridae|Pleolipoviridae|Sphaerolipoviridae|Simuloviridae|Rudiviridae|Lipothrixviridae|Tristromaviridae"
+  # BLACKLIST = táxons EUCARIÓTICOS (nunca fago): retrovírus (HIV), herpes, vírus gigantes,
+  # RNA/ssDNA eucariótico. Aplicada mesmo se o vírus ficar sub-classificado.
+  eukaryotic_taxa: "Herviviricetes|Peploviricota|Nucleocytoviricota|Megaviricetes|Pokkesviricetes|Pimascovirales|Algavirales|Imitervirales|Pandoravirales|Naldaviricetes|Maveriviricetes|Adenoviridae|Lavidaviridae|Revtraviricetes|Artverviricota|Negarnaviricota|Cressdnaviricota|Pisoniviricetes|Stelpaviricetes|Alsuviricetes|Flasuviricetes|Magsaviricetes|Insthoviricetes|Monjiviricetes|Chunqiuviricetes|Ellioviricetes|Milneviricetes|Yunchangviricetes|Howeltoviricetes|Amabiliviricetes|Allassoviricetes|Miaviricetes|Repensiviricetes|Arfiviricetes|Mouviricetes|Quintoviricetes|Shotokuvirae"
+  # true = mantém vírus sub-classificado como fago (NÃO perde fago novo/divergente);
+  # false = só conta o que bate na whitelist (mais estrito).
+  phage_filter_lenient: true
 
 # --------------------------------------------------------------------
 # Submissão ao ENA (European Nucleotide Archive) — pacote MIUViG dos uViGs.

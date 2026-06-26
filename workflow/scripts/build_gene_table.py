@@ -36,10 +36,36 @@ def gene_contig(gene_id):
     return gene_id.rsplit("_", 1)[0] if "_" in gene_id else gene_id
 
 
-# Classes virais PROCARIOTICAS (fagos) na taxonomia do geNomad. O default cobre
-# os principais; vir eucariotico (Orthornavirae/RNA, Pararnavirae=retro p.ex. HIV,
-# Megaviricetes=virus gigantes, Herpes, etc.) NAO casa e fica de fora do teste.
-DEFAULT_PHAGE_CLASSES = "Caudoviricetes|Malgrandaviricetes|Faserviricetes|Leviviricetes"
+# PORTAO DE FAGO (taxonomia geNomad/ICTV). Os REALMS sao mistos (Duplodnaviria,
+# Monodnaviria, Varidnaviria tem fagos E virus eucarioticos), por isso filtramos por
+# CLASSE/FAMILIA. Lista comprehensiva de virus PROCARIOTICOS (bacteria + arqueia,
+# DNA + RNA) -- nao so Caudoviricetes:
+#   dsDNA caudados: Caudoviricetes (bact+arq) | ssDNA: Malgrandaviricetes (Microviridae),
+#   Faserviricetes (Inoviridae) | ssRNA: Leviviricetes | dsRNA: Vidaverviricetes
+#   (Cystoviridae) | arqueia: Tokiviricetes/Adnaviria + familias de arqueia.
+DEFAULT_PHAGE_CLASSES = (
+    "Caudoviricetes|Caudovirales|Leviviricetes|Faserviricetes|Vidaverviricetes|"
+    "Malgrandaviricetes|Tokiviricetes|Adnaviria|"
+    "Microviridae|Inoviridae|Plectroviridae|Tectiviridae|Corticoviridae|Autolykiviridae|"
+    "Cystoviridae|Fiersviridae|Steitzviridae|Solspiviridae|Duinviridae|Plasmaviridae|"
+    "Finnlakeviridae|Fuselloviridae|Halspiviridae|Thaspiviridae|Bicaudaviridae|"
+    "Ampullaviridae|Clavaviridae|Globuloviridae|Guttaviridae|Spiraviridae|Ovaliviridae|"
+    "Portogloboviridae|Turriviridae|Pleolipoviridae|Sphaerolipoviridae|Simuloviridae|"
+    "Rudiviridae|Lipothrixviridae|Tristromaviridae"
+)
+# BLACKLIST EUCARIOTICA: classes/filos/familias que NUNCA sao fago (exclui mesmo se
+# o virus ficar sub-classificado). Cobre retrovirus (HIV), herpes, virus gigantes,
+# e os virus de RNA/ssDNA eucarioticos.
+DEFAULT_EUK_CLASSES = (
+    "Herviviricetes|Peploviricota|Nucleocytoviricota|Megaviricetes|Pokkesviricetes|"
+    "Pimascovirales|Algavirales|Imitervirales|Pandoravirales|Naldaviricetes|"
+    "Maveriviricetes|Adenoviridae|Lavidaviridae|Revtraviricetes|Artverviricota|"
+    "Negarnaviricota|Cressdnaviricota|Pisoniviricetes|Stelpaviricetes|Alsuviricetes|"
+    "Flasuviricetes|Magsaviricetes|Insthoviricetes|Monjiviricetes|Chunqiuviricetes|"
+    "Ellioviricetes|Milneviricetes|Yunchangviricetes|Howeltoviricetes|Amabiliviricetes|"
+    "Allassoviricetes|Miaviricetes|Repensiviricetes|Arfiviricetes|Mouviricetes|"
+    "Quintoviricetes|Shotokuvirae"
+)
 
 _BIN_RE = re.compile(r"^(?P<sample>.+?)__(?:vamb|vrhyme)__bin\d+__(?P<contig>.+)$")
 
@@ -95,10 +121,20 @@ def parse_phatyp(path, sample):
     return out
 
 
-def is_phage_tax(tax, phage_re):
-    """True se a taxonomia do geNomad indica vírus PROCARIÓTICO (fago).
+def classify_phage(tax, phage_re, euk_re, lenient):
+    """Decide se a taxonomia do geNomad indica FAGO (vírus procariótico). 3 vias:
+      1) bate na whitelist de fago (classe/família procariótica) -> FAGO;
+      2) bate na blacklist eucariótica (retro/herpes/gigantes/RNA euc.) -> NÃO-fago;
+      3) sub-classificado (vírus sem rank útil): 'lenient' decide (default True =
+         mantém, p/ NÃO perder fago novo/divergente; False = só whitelist).
     tax vazio (provirus reforçado pelo provirus.tsv) -> assume fago (prófago)."""
-    return tax == "" or bool(phage_re.search(tax))
+    if tax == "":
+        return True
+    if phage_re.search(tax):
+        return True
+    if euk_re.search(tax):
+        return False
+    return lenient
 
 
 def load_coord_hits(path, seq_key_candidates=("sequence", "seq", "contig")):
@@ -155,7 +191,11 @@ def main():
     ap.add_argument("--is-hits", default="", help="(opcional) MobileElementFinder no genoma (coords) -> is_IS")
     ap.add_argument("--phatyp", default="", help="(opcional) PhaTYP prediction (lifestyle) -> filtro temperate")
     ap.add_argument("--phage-classes", default=DEFAULT_PHAGE_CLASSES,
-                    help="regex das classes virais procarióticas (fagos) na taxonomia geNomad")
+                    help="whitelist (regex) de classes/famílias virais PROCARIÓTICAS (fagos)")
+    ap.add_argument("--eukaryotic-classes", default=DEFAULT_EUK_CLASSES,
+                    help="blacklist (regex) de táxons eucarióticos (nunca fago)")
+    ap.add_argument("--phage-lenient", default="true",
+                    help="true = mantém vírus sub-classificado (não perde fago novo); false = só whitelist")
     ap.add_argument("--viral-set", default="temperate_phage",
                     choices=["temperate_phage", "provirus", "all_viral"],
                     help="quais regiões virais entram como is_viral no enriquecimento")
@@ -164,9 +204,14 @@ def main():
 
     mge_re = re.compile(args.mge_keywords, re.IGNORECASE)
     phage_re = re.compile(args.phage_classes, re.IGNORECASE)
+    euk_re = re.compile(args.eukaryotic_classes, re.IGNORECASE)
+    lenient = str(args.phage_lenient).strip().lower() in ("true", "1", "yes", "sim")
     full_viral, prov = parse_viral_regions(args.virus_summary, args.provirus)
     phatyp = parse_phatyp(args.phatyp, args.sample) if args.phatyp else {}
     mode = args.viral_set
+
+    def is_phage(tax):
+        return classify_phage(tax, phage_re, euk_re, lenient)
 
     # ----- seleciona o CONJUNTO VIRAL conforme o modo -----
     # provírus = integrados = TEMPERADOS (sempre); contigs livres precisam de
@@ -174,7 +219,7 @@ def main():
     prov_sel, free_sel = [], set()
     n_prov_nonphage = n_free_nonphage = n_free_lytic = 0
     for (src, s, e, tax) in prov:
-        if mode == "all_viral" or is_phage_tax(tax, phage_re):
+        if mode == "all_viral" or is_phage(tax):
             prov_sel.append((src, s, e))
         else:
             n_prov_nonphage += 1
@@ -184,7 +229,7 @@ def main():
         elif mode == "provirus":
             pass  # contigs livres não entram
         else:  # temperate_phage
-            if not is_phage_tax(tax, phage_re):
+            if not is_phage(tax):
                 n_free_nonphage += 1
             elif phatyp.get(contig, "") != "temperate":
                 n_free_lytic += 1
